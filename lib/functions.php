@@ -83,6 +83,13 @@ function user_gatekeeper_get_group_membership_guids($user_guid) {
 	return $result;
 }
 
+/**
+ * Get the guids of all users who have the specified user as a friend
+ *
+ * @param int $user_guid the user to find the friends of
+ *
+ * @return bool|int[]
+ */
 function user_gatekeeper_get_user_friends_of_guids($user_guid) {
 	$result = false;
 	
