@@ -84,22 +84,29 @@ function user_gatekeeper_search_users_hook($hook, $type, $returnvalue, $params) 
 
 	$params["wheres"] = array("(($where) OR ($md_where))");
 	
-	// check for group membership
-	$groups = user_gatekeeper_get_group_membership_guids($user->getGUID());
-	$relation_wheres = array();
-	if (!empty($groups)) {
-		$params["joins"][] = "JOIN {$db_prefix}entity_relationships rg ON e.guid = rg.guid_one";
-		$relation_wheres[] = "(rg.guid_two IN (" . implode(",", $groups) . ") AND rg.relationship = 'member')";
-	}
-	
-	// check for friends
-	$friends = user_gatekeeper_get_user_friends_of_guids($user->getGUID());
-	if (!empty($friends)) {
-		$relation_wheres[] = "(e.guid IN (" . implode(",", $friends) . "))";
-	}
-	
-	if (!empty($relation_wheres)) {
-		$params["wheres"][] = "(" . implode(" OR ", $relation_wheres) . ")";
+	if (!$user->isAdmin()) {
+		// normal users are limited to group members and friends_of
+		
+		// check for group membership
+		$groups = user_gatekeeper_get_group_membership_guids($user->getGUID());
+		$relation_wheres = array();
+		if (!empty($groups)) {
+			$params["joins"][] = "JOIN {$db_prefix}entity_relationships rg ON e.guid = rg.guid_one";
+			$relation_wheres[] = "(rg.guid_two IN (" . implode(",", $groups) . ") AND rg.relationship = 'member')";
+		}
+		
+		// check for friends
+		$friends = user_gatekeeper_get_user_friends_of_guids($user->getGUID());
+		if (!empty($friends)) {
+			$relation_wheres[] = "(e.guid IN (" . implode(",", $friends) . "))";
+		}
+		
+		if (!empty($relation_wheres)) {
+			$params["wheres"][] = "(" . implode(" OR ", $relation_wheres) . ")";
+		} else {
+			// no friends or groups, so you can't find users
+			return array("entities" => array(), "count" => 0);
+		}
 	}
 	
 	// override subtype -- All users should be returned regardless of subtype.
